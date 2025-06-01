@@ -7,13 +7,13 @@ def run_interface(): # Interface function
             
         try:
             print("\nWhich menu you would like to navigate to?") # Interface navigation prompt
-            user_selection = int(input("1. Log income\n2. Log expense\n3. View balance\n4. Exit\n\nEnter corresponding number here: ")) # Get user input
+            user_selection = int(input("1. Log expense\n2. Log income\n3. View balance\n4. Exit\n\nEnter corresponding number here: ")) # Get user input
 
             match user_selection: # Match user input to following cases
                 case 1:
-                    income_calculations() # Case 1 runs income_calculations function
+                    expense_calculations() # Case 1 runs income_calculations function
                 case 2:
-                    expense_calculations() # Case 2 runs expense_calculations fuction
+                    income_calculations() # Case 2 runs expense_calculations fuction
                 case 3:
                     total_calculations() # Case 3 runs total_calculations function
                 case 4:
@@ -23,6 +23,32 @@ def run_interface(): # Interface function
         
         except ValueError: # Error Exception
             print("\nInvalid input. Please enter a number from the menu.") # Error statment
+
+def expense_calculations(): # Expense info function
+
+    while True: # Loop
+
+        try:
+            expense_amounts = int(input("\nHow many seperate expense values would you like to track?: ")) # Get input for how many expenses user would like to track
+            print() # \n
+            break # Break if valid
+
+        except ValueError: # Error Exception
+            print("\nInvalid input. Please enter a number.") # Error statment
+
+    for i in range(expense_amounts): # Loop through "i" number of times until it has reached the users input
+            
+        while True: # Loop
+
+            try:
+                individual_expenses = float(input(f"Enter the expense from source {i+1}: $")) # Get input for monthly expense "i"
+                expense__values.append(individual_expenses) # Add input to list
+                break
+
+            except ValueError: # Error Exception
+                print("\nInvalid input. Please enter a number.\n") # Error statment
+            
+    input("\nPress Enter to return to menu...") # Pauses program until user presses Enter
 
 def income_calculations(): # Income info function
             
@@ -41,7 +67,7 @@ def income_calculations(): # Income info function
         while True: # Loop
             
             try:
-                individual_values = float(input(f"Enter the income you received (rounded to the nearest dollar) from source {i+1}: $")) # Get input for their monthly income from "i" source
+                individual_values = float(input(f"Enter the income you received from source {i+1}: $")) # Get input for their monthly income from "i" source
                 income_values.append(individual_values) # Add input to list
                 break # Break if valid
 
@@ -67,7 +93,7 @@ def expense_calculations(): # Expense info function
         while True: # Loop
 
             try:
-                individual_expenses = float(input(f"Enter the expense (rounded to the nearest dollar) from source {i+1}: $")) # Get input for monthly expense "i"
+                individual_expenses = float(input(f"Enter the expense from source {i+1}: $")) # Get input for monthly expense "i"
                 expense__values.append(individual_expenses) # Add input to list
                 break
 
