@@ -17,10 +17,10 @@ cursor = connection.cursor() # Create cursor object to execute SQL commands on t
 
 # ----- Dev Note -----
 # Uncomment the following code to reset databases for testing purposes
-cursor.execute("DROP TABLE IF EXISTS Income_Tracker")
-cursor.execute("DROP TABLE IF EXISTS Expense_Tracker")
-cursor.execute("DROP TABLE IF EXISTS Totals_and_Balance")
-connection.commit()
+# cursor.execute("DROP TABLE IF EXISTS Income_Tracker")
+# cursor.execute("DROP TABLE IF EXISTS Expense_Tracker")
+# cursor.execute("DROP TABLE IF EXISTS Totals_and_Balance")
+# connection.commit()
 
 # Create expense tracker table or connect to it
 cursor.execute(
@@ -288,7 +288,7 @@ def income_inputs():
                         
                         try:
 
-                            income_entry_date = input("Enter the date of the income in this format (YYYY-MM-DD e.g. 2025-12-24): ")
+                            income_entry_date = input("Enter the date of the income in this format (YYYY-MM-DD): ")
                 
                             check_income_date = datetime.datetime.strptime(income_entry_date, "%Y-%m-%d")
                             current_date = datetime.datetime.today()
