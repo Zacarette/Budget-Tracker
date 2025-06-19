@@ -41,6 +41,48 @@ python "SQLite Data Persistence.py"
 
 ## Screenshots
 
+### Main Menu  
+
+Main Menu of Budget Tracker  
+  
+![Main Menu of Budget Tracker](Screenshots/main_menu.png)  
+
+### Log and View Expense  
+
+Expense Log  
+  
+![Expense Log](Screenshots/log_expense.png)  
+  
+Expense Display  
+  
+![Expense Display](Screenshots/expense_list.png)  
+
+### Edit Datase (Example shown with income)  
+  
+Edit Income  
+  
+![Edit Income Database](Screenshots/edit_database_income.png)  
+  
+### View Totals  
+  
+Totals and Balance Display  
+  
+![Totals and Balance Display](Screenshots/totals_and_balance.png)  
+  
+### SQLite Database Persistence  
+  
+Expense Database  
+  
+![Expense Datbase](Screenshots/expense_database.png)
+  
+Income Database  
+  
+![Income Database](Screenshots/income_database.png)  
+  
+Totals and Balance Database  
+  
+![Totals and Balance Database](Screenshots/totals_and_balance_database.png)  
+
 ## Author
 Michael Zaccaria
 [https://github.com/Zacarette]
