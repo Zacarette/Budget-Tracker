@@ -1,12 +1,5 @@
 # TODO:
-# .00 money validation
-# Search feature by date and name
-# Sort by $ high to low and low to high, and date recent to past and past to recent
-# Change how many database entries are showed to the user by default when they select the menu option
-
-# OPTIONAL TODO:
-# Looping edit for same entry edits
-# Validation on edit date for future dates like in first input
+# Refactor code, when refactoring remember to make seperate functions to help with case flow control structure
 
 import sqlite3 # Import SQLite3 to interact with databases
 import datetime # Import datetime to get current date
@@ -61,7 +54,7 @@ def run_interface():
             print(" Main Menu ".center(80))
             print("".center(80, "="))
             print("Which menu you would like to navigate to?")
-            user_selection = int(input("1. Log Expense\n2. Log Income\n3. View Expense\n4. View Income\n5. Edit Expense or Income\n6. View Balance\n0. Exit Program\n\nEnter corresponding number here: "))
+            user_selection = int(input("1. Log Expense\n2. Log Income\n3. View All Expenses\n4. View All Incomes\n5. Edit Expense or Income\n6. View Balance\n7. Search Databases\n0. Exit Program\n\nEnter corresponding number here: "))
             print("")
 
             # Match input that user selected
@@ -78,6 +71,8 @@ def run_interface():
                     edit_datebase()
                 case 6:
                     display_totals()
+                case 7:
+                    search_datebase()
                 case 0:
                     return
                 case _:
@@ -88,7 +83,6 @@ def run_interface():
             print("\nInvalid input. Please enter a number from the menu.\n")
 
 # Get expense inputs
-# TODO: add comments for date inputs
 def expense_inputs():
 
     while True:
@@ -115,8 +109,9 @@ def expense_inputs():
             
         while True:
 
-            # Prompt user for expense name and amount, then rounds it to hundreths and gets current date, gives them options to go back and exit
+            # Prompt user for expense name and gives them options to go back and exit
             try:
+
                 expense_type = input(f"Enter the name of expense {i+1} (Or enter '0' to go back): ")
 
                 if (expense_type == "0"):
@@ -124,13 +119,34 @@ def expense_inputs():
                     expense_inputs()
                     return
 
-                individual_expenses = float(input(f"Enter the expense amount from {expense_type} (Or enter '0' to cancel and exit to main menu): $"))
+                # Prompts user for expense amount
+                while True:
 
-                if (individual_expenses == 0):
-                    return
+                    try:
+
+                        individual_expenses = input(f"Enter the expense amount from {expense_type} (Or enter '0' to cancel and exit to main menu): $")
+                        check_decimal = individual_expenses.split(".")
                 
-                rounded_expense = round(individual_expenses, 2)
+                        if (individual_expenses == "0"):
+                            return
+                        
+                        if ("." in individual_expenses):
 
+                            if (len(check_decimal[1]) > 2):
+                                print("\nDecimal Place exceeds the hundredths place. Enter a number no more than two decimal places long.\n")
+                            
+                            else:
+                                checked_expense = float(individual_expenses)
+                                break
+
+                        else:
+                            checked_expense = float(individual_expenses)
+                            break
+                    
+                    except ValueError:
+                        print("\nInvalid input. Enter a valid input consisting only of numbers and '.' (decimal).\n")
+
+                # Validate if users entry date is real and in correct format
                 while True:
                         
                         try:
@@ -146,6 +162,7 @@ def expense_inputs():
                                 print()
                                 break
                             
+                            # Date is real but in the future, validate the user is intending to enter a future date
                             else:
 
                                 future_date = input("\nDate is in the future, are you sure you want to enter it into the database? (y/n): ")
@@ -157,19 +174,19 @@ def expense_inputs():
                                     break
 
                         except ValueError:
-                            print("\nInvalid input. Enter a date in YYYY-MM-DD format and make sure it is a real date.")
+                            print("\nInvalid input. Enter a date in YYYY-MM-DD format and make sure it is a real date.\n")
 
                 # Inserts expense info into database and commits
                 cursor.execute(
                     "INSERT INTO Expense_Tracker (Expense_Type, Expense_Amount, Entry_Date) VALUES (?, ?, ?)",
-                    (expense_type, rounded_expense, format_expense_date)
+                    (expense_type, checked_expense, format_expense_date)
                 )
                 connection.commit()
                 
                 # Output expense input to user via CLI
                 print(" Expense Added ".center(80, "-"))
                 print("Name:", expense_type)
-                print("Amount:", f"${rounded_expense:,.2f}")
+                print("Amount:", f"${checked_expense:,.2f}")
                 print("Date:", format_expense_date)
                 print("".center(80, "-"))
                 print("".center(80, "─"))
@@ -184,12 +201,13 @@ def expense_inputs():
     input("\nPress Enter to return to menu...")
     print()
 
-# Displays expense entries from database to user
+# Displays expense entries from database to user with user continuation validation
 def display_expense_menu():
     
     display_expense()
     input("Press Enter to return to menu...")
 
+# Displays expense entries
 def display_expense():
     
     # Get number of expense entries
@@ -241,7 +259,6 @@ def display_expense():
     print()
 
 # Get income inputs
-# TODO: add comments for date inputs
 def income_inputs():
             
     while True:
@@ -268,7 +285,7 @@ def income_inputs():
 
         while True:
             
-            # Prompt user for income name and amount, then rounds it to hundreths and gets current date, gives them options to go back and exit
+            # Prompt user for income name and gives them options to go back
             try:
                 income_type = input(f"Enter the name of income {i+1} (Or enter '0' to go back): ")
 
@@ -277,13 +294,35 @@ def income_inputs():
                     expense_inputs()
                     return
                 
-                individual_incomes = float(input(f"Enter the income you received from {income_type} (Or enter '0' to cancel and exit to main menu): $"))
+                # Validates if the users input exceeds the hundredths place
+                while True:
 
-                if (individual_incomes == 0):
-                    return
+                    # Prompts user for income amount
+                    try:
 
-                rounded_income = round(individual_incomes, 2)
+                        individual_incomes = input(f"Enter the income amount from {income_type} (Or enter '0' to cancel and exit to main menu): $")
+                        check_decimal = individual_incomes.split(".")
                 
+                        if (individual_incomes == "0"):
+                            return
+                        
+                        if ("." in individual_incomes):
+
+                            if (len(check_decimal[1]) > 2):
+                                print("\nDecimal Place exceeds the hundredths place. Enter a number no more than two decimal places long.\n")
+                            
+                            else:
+                                checked_income = float(individual_incomes)
+                                break
+
+                        else:
+                            checked_income = float(individual_incomes)
+                            break
+                    
+                    except ValueError:
+                        print("\nInvalid input. Enter a valid input consisting only of numbers and '.' (decimal).\n")
+                
+                # Validate if users entry date is real and in correct format
                 while True:
                         
                         try:
@@ -299,6 +338,7 @@ def income_inputs():
                                 print()
                                 break
                             
+                            # Date is real but in the future, validate the user is intending to enter a future date
                             else:
 
                                 future_date = input("\nDate is in the future, are you sure you want to enter it into the database? (y/n): ")
@@ -310,19 +350,19 @@ def income_inputs():
                                     break
 
                         except ValueError:
-                            print("\nInvalid input. Enter a date in YYYY-MM-DD format and make sure it is a real date.")
+                            print("\nInvalid input. Enter a date in YYYY-MM-DD format and make sure it is a real date.\n")
                 
                 # Inserts income info into database and commits
                 cursor.execute(
                     "INSERT INTO Income_Tracker (Income_Type, Income_Amount, Entry_Date) VALUES (?, ?, ?)",
-                    (income_type, rounded_income, format_income_date)
+                    (income_type, checked_income, format_income_date)
                 )
                 connection.commit()
 
                 # Output income input to user via CLI
                 print(" Income Added ".center(80, "-"))
                 print("Name:", income_type)
-                print("Amount:", f"${rounded_income:,.2f}")
+                print("Amount:", f"${checked_income:,.2f}")
                 print("Date:", format_income_date)
                 print("".center(80, "-"))
                 print("".center(80, "─"))
@@ -337,12 +377,13 @@ def income_inputs():
     input("\nPress Enter to return to main menu...")
     print()
 
+# Displays income entries from database to user with user continuation validation
 def display_income_menu():
 
     display_income()
     input("\nPress Enter to return to menu...")
 
-# Displays income entries from database to user
+# Displays income entries
 def display_income():
     
     # Get number of income entries; defaults to 0 if null
@@ -439,10 +480,12 @@ def update_in_background():
 
     do_total_calculations()
 
+# Edit menu loop
 def edit_datebase():
 
     while True:
 
+        # Prompt for which database table the user would like to edit
         try:
             print("".center(80, "="))
             print(" Edit Database Menu ".center(80))
@@ -461,15 +504,16 @@ def edit_datebase():
                     print("\nInvalid input. Please enter a number from the menu.\n") # Handles int inputs not 0, 1, or 2
     
         except ValueError:
-            print("\nInvalid input. Please enter a number from the menu.\n")
+            print("\nInvalid input. Please enter a number from the menu.\n") # Handles all other invalid inputs
 
-# TODO: Comments
+# Edit expense loop
 def edit_expense():
 
     check_amount = cursor.execute(
         "SELECT COUNT(Expense_ID) FROM Expense_Tracker"
     ).fetchone()[0] or 0
 
+    # If check_amount is not 0, run loop to get user info
     if (check_amount != 0):
         
         while True:
@@ -477,6 +521,7 @@ def edit_expense():
             try:
                 print()
                 display_expense()
+                print("NOTE: If you make multiple edits they will update and save but will not be shown until you exit out the entry you are currently editing.\n")
                 id_search = int(input("Enter the corresponding Expense ID that you would like to edit(Or enter 0 to go back): "))
 
                 if (id_search == 0):
@@ -488,12 +533,14 @@ def edit_expense():
                     (id_search,)
                 ).fetchone()
 
+                # If the Expense ID the user entered is valid gather info from that entry
                 if (database_search is not None):
 
-                    expense_id,  expense_name,  expense_amount,  expense_date = database_search
+                    expense_id, expense_name, expense_amount, expense_date = database_search
 
                     while True:
-                    
+                        
+                        # Display info gathered from selected entry
                         try:
                             print()
                             print(f"Expense ID: {expense_id}".center(80, "-"))
@@ -507,6 +554,8 @@ def edit_expense():
                                 break
 
                             match edit_selection:
+
+                                # Updates and commits expense name change(no validation here, up the the user to create meaningful names on their own)
                                 case 1:
                                     edit_name = input("What would you like to change the name to?: ")
                                     cursor.execute(
@@ -515,23 +564,87 @@ def edit_expense():
                                     )
                                     connection.commit()
 
-                                    input("\nName change saved, press enter to return to main menu...")
-                                    print()
-                                    return
+                                    while True:
+                                    
+                                        try:
 
+                                            checking = int(input("\nName change saved. Press 1 to edit something else from this entry or 0 to return to the main menu.\n\nEnter here: "))
+
+                                            if (checking == 1):
+                                                print()
+                                                break
+
+                                            elif (checking == 0):
+                                                return
+                                            
+                                            else:
+                                                print("\nInvalid Input.")
+                                            
+                                        except ValueError:
+                                            print("\nInvalid Input.")
+
+                                    continue
+
+                                # Updates and commits expense amount change
                                 case 2:
-                                    edit_amount = float(input("What would you like to change the amount to?: $"))
+
+                                    # Check if their updated amount exceeds the hundreths place, if valid commits amount change
+                                    while True:
+
+                                        try:
+
+                                            edit_amount = input("What would you like to change the amount to?: $")
+                                            check_decimal = edit_amount.split(".")
+
+                                            if ("." in edit_amount):
+
+                                                if (len(check_decimal[1]) > 2):
+                                                    print("\nDecimal Place exceeds the hundredths place. Enter a number no more than two decimal places long.\n")
+
+                                                else:
+
+                                                    checked_expense = float(edit_amount)
+                                                    break
+
+                                            else:
+
+                                                checked_expense = float(edit_amount)
+                                                break
+                                        
+                                        except ValueError:
+                                            print("\nInvalid input. Enter a valid input consisting only of numbers and '.' (decimal).\n")
+                                    
                                     cursor.execute(
                                         "UPDATE Expense_Tracker SET Expense_Amount = (?) WHERE Expense_ID = (?)",
-                                        (edit_amount, id_search,)
+                                        (checked_expense, id_search,)
                                     )
                                     connection.commit()
+                                                    
+                                    while True:
+                                    
+                                        try:
 
-                                    input("\nAmount change saved, press enter to return to main menu...")
-                                    print()
-                                    return
+                                            checking = int(input("\nName change saved. Press 1 to edit something else from this entry or 0 to return to the main menu.\n\nEnter here: "))
 
+                                            if (checking == 1):
+                                                print()
+                                                break
+
+                                            elif (checking == 0):
+                                                return
+                                            
+                                            else:
+                                                print("\nInvalid Input.")
+                                            
+                                        except ValueError:
+                                            print("\nInvalid Input.")
+
+                                    continue
+
+                                # Updates and commits date change
                                 case 3:
+
+                                    # Validation for expense date change, if valid commits date change
                                     while True:
 
                                         try:
@@ -539,30 +652,66 @@ def edit_expense():
                                             edit_date = input("What would you like to change the date to? (YYYY-MM-DD): ")
                                             check_edit_date = datetime.datetime.strptime(edit_date, "%Y-%m-%d")
                                             format_expense_date = datetime.date.strftime(check_edit_date, "%Y-%m-%d")
-                                            cursor.execute(
-                                                "UPDATE Expense_Tracker SET Entry_Date = (?) WHERE Expense_ID = (?)",
-                                                (format_expense_date, id_search)
-                                            )
-                                            connection.commit()
+                                            
+                                            current_date = datetime.datetime.today()
+                            
+                                            if (current_date >= check_edit_date):
+                                
+                                                format_expense_date = datetime.date.strftime(check_edit_date, "%Y-%m-%d")
+                                                print()
+                                                break
+                            
+                                            # Date is real but in the future, validate the user is intending to enter a future date
+                                            else:
 
-                                            input("\nDate change saved, press enter to return to main menu...")
-                                            print()
-                                            return
+                                                future_date = input("\nDate is in the future, are you sure you want to enter it into the database? (y/n): ")
+                                
+                                                if (future_date == "y"):
+
+                                                    format_expense_date = datetime.date.strftime(check_edit_date, "%Y-%m-%d")
+                                                    print()
+                                                    break
                                         
                                         except ValueError:
-                                            print("Invalid input. Enter a date in YYYY-MM-DD format and make sure it is a real date.\n")
+                                            print("Invalid input. Enter a date in YYYY-MM-DD format and make sure it is a real date.\n") # Invalid date format or input
+                                    
+                                    cursor.execute(
+                                        "UPDATE Expense_Tracker SET Entry_Date = (?) WHERE Expense_ID = (?)",
+                                        (format_expense_date, id_search)
+                                    )
+                                    connection.commit()
 
-                                case _:
-                                    print("\nInvalid input. Please select a number from the menu.")
+                                    while True:
+                                    
+                                        try:
+
+                                            checking = int(input("\nName change saved. Press 1 to edit something else from this entry or 0 to return to the main menu.\n\nEnter here: "))
+
+                                            if (checking == 1):
+                                                print()
+                                                break
+
+                                            elif (checking == 0):
+                                                return
+                                            
+                                            else:
+                                                print("\nInvalid Input.")
+                                            
+                                        except ValueError:
+                                            print("\nInvalid Input.")
+
+                                    continue
 
                         except ValueError:
-                            print("\nInvalid input. Please select a number from the menu.")  
+                            print("\nInvalid input. Please select a number from the menu.") # Error message for other entries
+
                 else:
-                    print("\nNo Expense ID with that number. Try again.")
+                    print("\nNo Expense ID with that number. Try again.") # Error messaage for invalid Expense ID
 
             except ValueError:
-                print("\nInvalid input. Enter the ID number for the expense you would like to edit.")
-        
+                print("\nInvalid input. Enter the ID number for the expense you would like to edit.") # Error message for values not accepted
+
+    # Database table is empty    
     else:
         print()
         print("".center(80, "="))
@@ -573,13 +722,14 @@ def edit_expense():
         print("".center(80, "-"))
         input("\nPress enter to return to the main menu...")
 
-# TODO: Comments
+# Edit income loop
 def edit_income():
 
     check_amount = cursor.execute(
         "SELECT COUNT(Income_ID) FROM Income_Tracker"
     ).fetchone()[0] or 0
 
+    # If check_amount is not 0, run loop to get user info
     if (check_amount != 0):
         
         while True:
@@ -587,6 +737,7 @@ def edit_income():
             try:
                 print()
                 display_income()
+                print("NOTE: If you make multiple edits they will update and save but will not be shown until you exit out the entry you are currently editing.\n")
                 id_search = int(input("Enter the corresponding Income ID that you would like to edit(Or enter 0 to go back): "))
 
                 if (id_search == 0):
@@ -598,12 +749,14 @@ def edit_income():
                     (id_search,)
                 ).fetchone()
 
+                # If the Income ID the user entered is valid gather info from that entry
                 if (database_search is not None):
 
                     income_id,  income_name,  income_amount,  income_date = database_search
 
                     while True:
-                    
+                        
+                        # Display info gathered from selected entry
                         try:
                             print()
                             print(f"Income ID: {income_id}".center(80, "-"))
@@ -617,6 +770,8 @@ def edit_income():
                                 break
 
                             match edit_selection:
+
+                                # Updates and commits income name change(no validation here, up the the user to create meaningful names on their own)
                                 case 1:
                                     edit_name = input("What would you like to change the name to?: ")
                                     cursor.execute(
@@ -625,23 +780,87 @@ def edit_income():
                                     )
                                     connection.commit()
 
-                                    input("\nName change saved, press enter to return to main menu...")
-                                    print()
-                                    return
+                                    while True:
+                                    
+                                        try:
 
+                                            checking = int(input("\nName change saved. Press 1 to edit something else from this entry or 0 to return to the main menu.\n\nEnter here: "))
+
+                                            if (checking == 1):
+                                                print()
+                                                break
+
+                                            elif (checking == 0):
+                                                return
+                                            
+                                            else:
+                                                print("\nInvalid Input.")
+                                            
+                                        except ValueError:
+                                            print("\nInvalid Input.")
+
+                                    continue
+                                
+                                # Updates and commits income amount change
                                 case 2:
-                                    edit_amount = float(input("What would you like to change the amount to?: $"))
+
+                                    # Check if their updated amount exceeds the hundreths place, if valid commits amount change
+                                    while True:
+
+                                        try:
+
+                                            edit_amount = input("What would you like to change the amount to?: $")
+                                            check_decimal = edit_amount.split(".")
+
+                                            if ("." in edit_amount):
+
+                                                if (len(check_decimal[1]) > 2):
+                                                    print("\nDecimal Place exceeds the hundredths place. Enter a number no more than two decimal places long.\n")
+
+                                                else:
+
+                                                    checked_income = float(edit_amount)
+                                                    break
+
+                                            else:
+
+                                                checked_income = float(edit_amount)
+                                                break
+                                        
+                                        except ValueError:
+                                            print("\nInvalid input. Enter a valid input consisting only of numbers and '.' (decimal).\n")
+                                    
                                     cursor.execute(
                                         "UPDATE Income_Tracker SET Income_Amount = (?) WHERE Income_ID = (?)",
-                                        (edit_amount, id_search,)
+                                        (checked_income, id_search,)
                                     )
                                     connection.commit()
+                                                    
+                                    while True:
+                                    
+                                        try:
 
-                                    input("\nAmount change saved, press enter to return to main menu...")
-                                    print()
-                                    return
+                                            checking = int(input("\nName change saved. Press 1 to edit something else from this entry or 0 to return to the main menu.\n\nEnter here: "))
 
+                                            if (checking == 1):
+                                                print()
+                                                break
+
+                                            elif (checking == 0):
+                                                return
+                                            
+                                            else:
+                                                print("\nInvalid Input.")
+                                            
+                                        except ValueError:
+                                            print("\nInvalid Input.")
+
+                                    continue
+
+                                # Updates and commits date change
                                 case 3:
+
+                                    # Validation for income date change, if valid commits date change
                                     while True:
 
                                         try:
@@ -649,30 +868,69 @@ def edit_income():
                                             edit_date = input("What would you like to change the date to? (YYYY-MM-DD): ")
                                             check_edit_date = datetime.datetime.strptime(edit_date, "%Y-%m-%d")
                                             format_income_date = datetime.date.strftime(check_edit_date, "%Y-%m-%d")
-                                            cursor.execute(
-                                                "UPDATE Income_Tracker SET Entry_Date = (?) WHERE Income_ID = (?)",
-                                                (format_income_date, id_search)
-                                            )
-                                            connection.commit()
                                             
-                                            input("\nDate change saved, press enter to return to main menu...")
-                                            print()
-                                            return
+                                            current_date = datetime.datetime.today()
+                            
+                                            if (current_date >= check_edit_date):
+                                
+                                                format_income_date = datetime.date.strftime(check_edit_date, "%Y-%m-%d")
+                                                print()
+                                                break
+                            
+                                            # Date is real but in the future, validate the user is intending to enter a future date
+                                            else:
+
+                                                future_date = input("\nDate is in the future, are you sure you want to enter it into the database? (y/n): ")
+                                
+                                                if (future_date == "y"):
+
+                                                    format_income_date = datetime.date.strftime(check_edit_date, "%Y-%m-%d")
+                                                    print()
+                                                    break
                                         
                                         except ValueError:
-                                            print("Invalid input. Enter a date in YYYY-MM-DD format and make sure it is a real date.\n")
+                                            print("Invalid input. Enter a date in YYYY-MM-DD format and make sure it is a real date.\n") # Invalid date format or input
+                                    
+                                    cursor.execute(
+                                        "UPDATE Income_Tracker SET Entry_Date = (?) WHERE Income_ID = (?)",
+                                        (format_income_date, id_search)
+                                    )
+                                    connection.commit()
+
+                                    while True:
+                                    
+                                        try:
+
+                                            checking = int(input("\nName change saved. Press 1 to edit something else from this entry or 0 to return to the main menu.\n\nEnter here: "))
+
+                                            if (checking == 1):
+                                                print()
+                                                break
+
+                                            elif (checking == 0):
+                                                return
+                                            
+                                            else:
+                                                print("\nInvalid Input.")
+                                            
+                                        except ValueError:
+                                            print("\nInvalid Input.")
+
+                                    continue
 
                                 case _:
-                                    print("\nInvalid input. Please select a number from the menu.")
+                                    print("\nInvalid input. Please select a number from the menu.") # Default case for inputs not on the menu
 
                         except ValueError:
-                            print("\nInvalid input. Please select a number from the menu.")  
+                            print("\nInvalid input. Please select a number from the menu.") # Error message for other entries
+
                 else:
-                    print("\nNo Income ID with that number. Try again.")
+                    print("\nNo Income ID with that number. Try again.") # Error messaage for invalid Expense ID
 
             except ValueError:
-                print("\nInvalid input. Enter the ID number for the income you would like to edit.")
-        
+                print("\nInvalid input. Enter the ID number for the income you would like to edit.") # Error message for values not accepted
+
+    # Database table is empty     
     else:
         print()
         print("".center(80, "="))
@@ -682,6 +940,613 @@ def edit_income():
         print("No Data Found in Income Database")
         print("".center(80, "-"))
         input("\nPress enter to return to the main menu...")
+
+# Search menu loop
+def search_datebase():
+    
+    while True:
+
+        try:
+            print("".center(80, "="))
+            print(" Search Database Menu ".center(80))
+            print("".center(80, "="))
+            search = int(input("Which would you like to search for?\n1. Expense\n2. Income\n\nEnter the corrisponding number here(Or enter 0 to go back to main menu): "))
+            match search:
+                case 1:
+                    search_expense()
+                    break
+                case 2:
+                    search_income()
+                    break
+                case 0:
+                    run_interface()
+                case _:
+                    print("\nInvalid input. Please enter a number from the menu.\n") # Handles int inputs not 0, 1, or 2
+    
+        except ValueError:
+            print("\nInvalid input. Please enter a number from the menu.\n") # Handles all other invalid inputs
+
+# Search expenses by name, date, and price
+def search_expense():
+
+    check_amount = cursor.execute(
+        "SELECT COUNT(Expense_ID) FROM Expense_Tracker"
+    ).fetchone()[0] or 0
+
+    while True:
+    
+        try:
+
+            # If check_amount is not 0, prompt user for how they would like to search
+            if (check_amount != 0):
+
+                search_type = int(input("\nHow would you like to search for an expense?\n1. By Name\n2. By Date\n3. By Price\n\nEnter the corrisponding number here(Or enter 0 to go back): "))
+
+                if  (search_type == 0):
+                    search_datebase()
+                
+                match search_type:
+                    
+                    # Searches for what the user entered and returns entries containing those characters
+                    case 1:
+
+                        while True:
+
+                            user_search = input("\nEnter the name you would like to search for: ")
+                            print()
+
+                            user_search_match = (f"%{user_search}%")
+
+                            name_search = cursor.execute(
+                                "SELECT * FROM Expense_Tracker WHERE Expense_Type LIKE (?)",
+                                (user_search_match,)
+                            ).fetchall()
+                        
+                            if (len(name_search) != 0):
+
+                                for i in name_search:
+
+                                    id = i[0]
+                                    name = i[1]
+                                    amount = i[2]
+                                    date = i[3]
+
+                                    print(f"Expense ID: {id}".center(80, "-"))
+                                    print(f"Expense Name: {name}")
+                                    print("Expense Name:", f"${amount:,.2f}")
+                                    print(f"Entry Date: {date}")
+                                    print("".center(80, "-"))
+      
+                                input("\nPress Enter to return to main menu...")
+                                return
+
+                            else:
+                                print("No matches found. Please try again or enter a different name.")
+
+                    # Searches and returns dates descending or ascending depending on what user selects
+                    case 2:
+                        
+                        while True:
+
+                            try:
+                        
+                                search_order = int(input("\nWould you like to sort dates by descending or ascending?:\n1. Descending(Newest to Oldest)\n2. Ascending(Oldest to Newest)\n\nEnter the corrisponding number here (Or enter 0 to go back): "))
+
+                                match search_order:
+
+                                    case 1:
+
+                                        offset = 0
+
+                                        while True:
+
+                                            desc = cursor.execute(
+                                                "SELECT * FROM Expense_Tracker ORDER BY Entry_Date DESC LIMIT 5 OFFSET (?)",
+                                                (offset,)
+                                            )
+                                        
+                                            results = list(desc)
+
+                                            for i in results:
+                                            
+                                                id = i[0]
+                                                name = i[1]
+                                                amount = i[2]
+                                                date = i[3]
+
+                                                print(f"Expense ID: {id}".center(80, "-"))
+                                                print(f"Expense Name: {name}")
+                                                print(f"Expense Amount:", f"${amount:,.2f}")
+                                                print(f"Entry Date: {date}")
+                                                print("".center(80, "-"))
+      
+                                            if (len(results) < 5):
+                                            
+                                                input("\nEnd of entries. Press Enter to return to main menu...")
+                                                return
+                                            
+                                            else:
+
+                                                try:
+
+                                                    next_choices = int(input("\nPress 1 to see next entries or 0 to return to main menu.\n\nEnter here: "))
+
+                                                    if (next_choices == 1):
+                                                        offset += 5
+                                                        continue
+
+                                                    elif (next_choices == 0):
+                                                        return
+
+                                                except ValueError:
+                                                    print("\nInvalid Input.")
+                                    
+                                    case 2:
+
+                                        offset = 0
+
+                                        while True:
+
+                                            asc = cursor.execute(
+                                                "SELECT * FROM Expense_Tracker ORDER BY Entry_Date ASC LIMIT 5 OFFSET (?)",
+                                                (offset,)
+                                            )
+
+                                            results = list(asc)
+
+                                            for i in results:
+                                            
+                                                id = i[0]
+                                                name = i[1]
+                                                amount = i[2]
+                                                date = i[3]
+
+                                                print(f"Expense ID: {id}".center(80, "-"))
+                                                print(f"Expense Name: {name}")
+                                                print(f"Expense Name:", f"${amount:,.2f}")
+                                                print(f"Entry Date: {date}")
+                                                print("".center(80, "-"))
+      
+                                            if (len(results) < 5):
+                                            
+                                                input("\nEnd of entries. Press Enter to return to main menu...")
+                                                return
+                                            
+                                            else:
+
+                                                try:
+
+                                                    next_choices = int(input("\nPress 1 to see next entries or 0 to return to main menu.\n\nEnter here: "))
+
+                                                    if (next_choices == 1):
+                                                        offset += 5
+                                                        continue
+
+                                                    elif (next_choices == 0):
+                                                        return
+
+                                                except ValueError:
+                                                    print("\nInvalid Input.")
+                                    
+                                    case 0:
+                                        break
+                                    
+                                    case _:
+                                        print("Invalid Input. Please enter a valid number from the menu.")
+
+                            except ValueError:
+                                print("Invalid Input. Please enter a valid number from the menu.")
+
+                    # Searches and returns prices descending or ascending depending on what user selects
+                    case 3:
+
+                        while True:
+
+                            try:
+                        
+                                search_order = int(input("\nWould you like to sort price by descending or ascending?:\n1. Descending($$$ to $)\n2. Ascending($ to $$$)\n\nEnter the corrisponding number here (Or enter 0 to go back): "))
+
+                                match search_order:
+
+                                    case 1:
+
+                                        offset = 0
+
+                                        while True:
+
+                                            desc = cursor.execute(
+                                                "SELECT * FROM Expense_Tracker ORDER BY Expense_Amount DESC LIMIT 5 OFFSET (?)",
+                                                (offset,)
+                                            )
+                                        
+                                            results = list(desc)
+
+                                            for i in results:
+                                            
+                                                id = i[0]
+                                                name = i[1]
+                                                amount = i[2]
+                                                date = i[3]
+
+                                                print(f"Expense ID: {id}".center(80, "-"))
+                                                print(f"Expense Name: {name}")
+                                                print(f"Expense Amount:", f"${amount:,.2f}")
+                                                print(f"Entry Date: {date}")
+                                                print("".center(80, "-"))
+      
+                                            if (len(results) < 5):
+                                            
+                                                input("\nEnd of entries. Press Enter to return to main menu...")
+                                                return
+                                            
+                                            else:
+
+                                                try:
+
+                                                    next_choices = int(input("\nPress 1 to see next entries or 0 to return to main menu.\n\nEnter here: "))
+
+                                                    if (next_choices == 1):
+                                                        offset += 5
+                                                        continue
+
+                                                    elif (next_choices == 0):
+                                                        return
+
+                                                except ValueError:
+                                                    print("\nInvalid Input.")
+                                    
+                                    case 2:
+
+                                        offset = 0
+
+                                        while True:
+
+                                            asc = cursor.execute(
+                                                "SELECT * FROM Expense_Tracker ORDER BY Expense_Amount ASC LIMIT 5 OFFSET (?)",
+                                                (offset,)
+                                            )
+                                        
+                                            results = list(asc)
+
+                                            for i in results:
+                                            
+                                                id = i[0]
+                                                name = i[1]
+                                                amount = i[2]
+                                                date = i[3]
+
+                                                print(f"Expense ID: {id}".center(80, "-"))
+                                                print(f"Expense Name: {name}")
+                                                print(f"Expense Amount:", f"${amount:,.2f}")
+                                                print(f"Entry Date: {date}")
+                                                print("".center(80, "-"))
+      
+                                            if (len(results) < 5):
+                                            
+                                                input("\nEnd of entries. Press Enter to return to main menu...")
+                                                return
+                                            
+                                            else:
+
+                                                try:
+
+                                                    next_choices = int(input("\nPress 1 to see next entries or 0 to return to main menu.\n\nEnter here: "))
+
+                                                    if (next_choices == 1):
+                                                        offset += 5
+                                                        continue
+
+                                                    elif (next_choices == 0):
+                                                        return
+
+                                                except ValueError:
+                                                    print("\nInvalid Input.")
+                                    
+                                    case 0:
+                                        break
+                                    
+                                    case _:
+                                        print("Invalid Input. Please enter a valid number from the menu.")
+
+                            except ValueError:
+                                print("Invalid Input. Please enter a valid number from the menu.")
+
+                    case _:
+                        print("Invalid input. Please enter a corrisponding number from the menu.") # Handles int inputs not corrisponding with the main menu
+
+        except ValueError:
+            print("Invalid input. Please enter a corrisponding number from the menu.") # Handles all other invalid inputs
+
+# Search incomes by name, date, and price
+def search_income():
+
+    check_amount = cursor.execute(
+        "SELECT COUNT(Income_ID) FROM Income_Tracker"
+    ).fetchone()[0] or 0
+
+    while True:
+    
+        try:
+
+            # If check_amount is not 0, prompt user for how they would like to search
+            if (check_amount != 0):
+
+                search_type = int(input("\nHow would you like to search for an income?\n1. By Name\n2. By Date\n3. By Price\n\nEnter the corrisponding number here(Or enter 0 to go back): "))
+
+                if  (search_type == 0):
+                    search_datebase()
+                
+                match search_type:
+                    
+                    # Searches for what the user entered and returns entries containing those characters
+                    case 1:
+
+                        while True:
+
+                            user_search = input("\nEnter the name you would like to search for: ")
+                            print()
+
+                            user_search_match = (f"%{user_search}%")
+
+                            name_search = cursor.execute(
+                                "SELECT * FROM Income_Tracker WHERE Income_Type LIKE (?)",
+                                (user_search_match,)
+                            ).fetchall()
+                        
+                            if (len(name_search) != 0):
+
+                                for i in name_search:
+
+                                    id = i[0]
+                                    name = i[1]
+                                    amount = i[2]
+                                    date = i[3]
+
+                                    print(f"Income ID: {id}".center(80, "-"))
+                                    print(f"Income Name: {name}")
+                                    print(f"Income Name:", f"${amount:,.2f}")
+                                    print(f"Entry Date: {date}")
+                                    print("".center(80, "-"))
+      
+                                input("\nPress Enter to return to main menu...")
+                                return
+
+                            else:
+                                print("No matches found. Please try again or enter a different name.")
+
+                    # Searches and returns dates descending or ascending depending on what user selects
+                    case 2:
+                        
+                        while True:
+
+                            try:
+                        
+                                search_order = int(input("\nWould you like to sort dates by descending or ascending?:\n1. Descending(Newest to Oldest)\n2. Ascending(Oldest to Newest)\n\nEnter the corrisponding number here (Or enter 0 to go back): "))
+
+                                match search_order:
+
+                                    case 1:
+
+                                        offset = 0
+
+                                        while True:
+
+                                            desc = cursor.execute(
+                                                "SELECT * FROM Income_Tracker ORDER BY Entry_Date DESC LIMIT 5 OFFSET (?)",
+                                                (offset,)
+                                            )
+                                        
+                                            results = list(desc)
+
+                                            for i in results:
+                                            
+                                                id = i[0]
+                                                name = i[1]
+                                                amount = i[2]
+                                                date = i[3]
+
+                                                print(f"Income ID: {id}".center(80, "-"))
+                                                print(f"Income Name: {name}")
+                                                print(f"Income Amount:", f"${amount:,.2f}")
+                                                print(f"Entry Date: {date}")
+                                                print("".center(80, "-"))
+      
+                                            if (len(results) < 5):
+                                            
+                                                input("\nEnd of entries. Press Enter to return to main menu...")
+                                                return
+                                            
+                                            else:
+
+                                                try:
+
+                                                    next_choices = int(input("\nPress 1 to see next entries or 0 to return to main menu.\n\nEnter here: "))
+
+                                                    if (next_choices == 1):
+                                                        offset += 5
+                                                        continue
+
+                                                    elif (next_choices == 0):
+                                                        return
+
+                                                except ValueError:
+                                                    print("\nInvalid Input.")
+                                    
+                                    case 2:
+
+                                        offset = 0
+
+                                        while True:
+
+                                            asc = cursor.execute(
+                                                "SELECT * FROM Income_Tracker ORDER BY Entry_Date ASC LIMIT 5 OFFSET (?)",
+                                                (offset,)
+                                            )
+
+                                            results = list(asc)
+
+                                            for i in results:
+                                            
+                                                id = i[0]
+                                                name = i[1]
+                                                amount = i[2]
+                                                date = i[3]
+
+                                                print(f"Income ID: {id}".center(80, "-"))
+                                                print(f"Income Name: {name}")
+                                                print(f"Income Name:", f"${amount:,.2f}")
+                                                print(f"Entry Date: {date}")
+                                                print("".center(80, "-"))
+      
+                                            if (len(results) < 5):
+                                            
+                                                input("\nEnd of entries. Press Enter to return to main menu...")
+                                                return
+                                            
+                                            else:
+
+                                                try:
+
+                                                    next_choices = int(input("\nPress 1 to see next entries or 0 to return to main menu.\n\nEnter here: "))
+
+                                                    if (next_choices == 1):
+                                                        offset += 5
+                                                        continue
+
+                                                    elif (next_choices == 0):
+                                                        return
+
+                                                except ValueError:
+                                                    print("\nInvalid Input.")
+                                    
+                                    case 0:
+                                        break
+                                    
+                                    case _:
+                                        print("Invalid Input. Please enter a valid number from the menu.")
+
+                            except ValueError:
+                                print("Invalid Input. Please enter a valid number from the menu.")
+
+                    # Searches and returns prices descending or ascending depending on what user selects
+                    case 3:
+
+                        while True:
+
+                            try:
+                        
+                                search_order = int(input("\nWould you like to sort price by descending or ascending?:\n1. Descending($$$ to $)\n2. Ascending($ to $$$)\n\nEnter the corrisponding number here (Or enter 0 to go back): "))
+
+                                match search_order:
+
+                                    case 1:
+
+                                        offset = 0
+
+                                        while True:
+
+                                            desc = cursor.execute(
+                                                "SELECT * FROM Income_Tracker ORDER BY Income_Amount DESC LIMIT 5 OFFSET (?)",
+                                                (offset,)
+                                            )
+                                        
+                                            results = list(desc)
+
+                                            for i in results:
+                                            
+                                                id = i[0]
+                                                name = i[1]
+                                                amount = i[2]
+                                                date = i[3]
+
+                                                print(f"Income ID: {id}".center(80, "-"))
+                                                print(f"Income Name: {name}")
+                                                print(f"Income Amount:", f"${amount:,.2f}")
+                                                print(f"Entry Date: {date}")
+                                                print("".center(80, "-"))
+      
+                                            if (len(results) < 5):
+                                            
+                                                input("\nEnd of entries. Press Enter to return to main menu...")
+                                                return
+                                            
+                                            else:
+
+                                                try:
+
+                                                    next_choices = int(input("\nPress 1 to see next entries or 0 to return to main menu.\n\nEnter here: "))
+
+                                                    if (next_choices == 1):
+                                                        offset += 5
+                                                        continue
+
+                                                    elif (next_choices == 0):
+                                                        return
+
+                                                except ValueError:
+                                                    print("\nInvalid Input.")
+                                    
+                                    case 2:
+
+                                        offset = 0
+
+                                        while True:
+
+                                            asc = cursor.execute(
+                                                "SELECT * FROM Income_Tracker ORDER BY Income_Amount ASC LIMIT 5 OFFSET (?)",
+                                                (offset,)
+                                            )
+                                        
+                                            results = list(asc)
+
+                                            for i in results:
+                                            
+                                                id = i[0]
+                                                name = i[1]
+                                                amount = i[2]
+                                                date = i[3]
+
+                                                print(f"Income ID: {id}".center(80, "-"))
+                                                print(f"Income Name: {name}")
+                                                print(f"Income Amount:", f"${amount:,.2f}")
+                                                print(f"Entry Date: {date}")
+                                                print("".center(80, "-"))
+      
+                                            if (len(results) < 5):
+                                            
+                                                input("\nEnd of entries. Press Enter to return to main menu...")
+                                                return
+                                            
+                                            else:
+
+                                                try:
+
+                                                    next_choices = int(input("\nPress 1 to see next entries or 0 to return to main menu.\n\nEnter here: "))
+
+                                                    if (next_choices == 1):
+                                                        offset += 5
+                                                        continue
+
+                                                    elif (next_choices == 0):
+                                                        return
+
+                                                except ValueError:
+                                                    print("\nInvalid Input.")
+                                    
+                                    case 0:
+                                        break
+                                    
+                                    case _:
+                                        print("Invalid Input. Please enter a valid number from the menu.")
+
+                            except ValueError:
+                                print("Invalid Input. Please enter a valid number from the menu.")
+
+                    case _:
+                        print("Invalid input. Please enter a corrisponding number from the menu.") # Handles int inputs not corrisponding with the main menu
+
+        except ValueError:
+            print("Invalid input. Please enter a corrisponding number from the menu.") # Handles all other invalid inputs
 
 # Start program by launching the CLI main menu
 if __name__ == "__main__":
